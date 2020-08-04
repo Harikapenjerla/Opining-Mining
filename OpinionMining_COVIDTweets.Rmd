@@ -1,0 +1,425 @@
+---
+title: "Opinion Mining with TWITTER"
+author: "Group 1"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+    toc: true
+    df_print: paged
+---
+
+![](C:/Users/12342/Documents/AdvancedML/Project/Data/New/word_cloud_pic.png)
+
+Facing a Corona Virus pandemic, the world has gone uproar and population is in the state of panic. Thus, we are in the situation where there is a need to get an insight of the effects, it may have on the near future so we can be prepared. But due to certain measures taken to control the pandemic, the masses are trying to stay positive on todays date. The simple goal what we need to achieve now is to stay positive and not to panic.
+
+# **Objective**
+
+Our objective is to determine how the people in United State are reacting towards the Pandemic, for example, people tweets praises for doctors and nurses on how helpful they are, how the stay at home have helped in controlling the spread on Virus, etc. In the similar way there are negative tweets as well which we are trying to find. 
+
+Hence we are looking for the change in Sentiments of Public based on Covid 19, and the measures implemented for it.
+
+# **Goal**
+
+Our goal is to check the awareness the mass have about the Corona Pandemic and how people are accepting the changes that took place. And therefore, this sentiments of the people will be one of the factor which will help government officials and the general public in making decisions in controlling the situation.
+
+# **Data Gathering**
+
+- The data we extracted is a from **TWITTER** where we have extracted the tweets from the USA on the current pandemic of Corona Virus.
+
+- Instead of focusing of how the virus have caused the panic among the public we are looking for the tweets in more generalized way where people are trying to stay positive in such situation.
+
+## Libraries
+
+The R inbuilt libraries are used to extract the Twitter data.
+
+```{r, eval=FALSE}
+library(ROAuth)
+library(twitteR)
+library(rtweet)
+```
+
+## Twitter Developer Account
+
+We have initially created a twitter developers account where we provided with the general information regarding the data we require and the purpose of it.
+
+After getting the approval from the Twitter officials we have created an application and we were provided with the below authentication keys:
+
+ - Consumer_key, 
+ - Consumer_secret, 
+ - Access_token and 
+ - Access_secret.
+
+```{r, eval=FALSE}
+consumer_key <- "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+consumer_secret <- "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+access_token <- "xxxxxxxxxxxxxxxxxx-xxxxxxxxxxxxxxxxx"
+access_secret <- "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+## Data Extraction
+
+- We are using "#COVID-19","#coronavirus","#StayHome", "#StayAtHome", "#coronavirusUSA","#usacoronavirus" tags to extract the tweets of USA.
+
+### Extracting tweets in intervals.
+
+```{r, eval=FALSE}
+setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
+tags <- c("#COVID-19","#coronavirus","#StayHome", "#StayAtHome", "#coronavirusUSA","#usacoronavirus")
+
+refinedTags <- paste(tags, collapse = " OR ")
+
+set.seed(2020307);
+twitterData = twitteR::searchTwitter(refinedTags, since = '2020-03-20', until = '2020-05-02', lang ="en" , n = 2000000)
+
+finalTweet = twitteR::twListToDF(twitterData)
+
+write.csv(finalTweet,"/Tweets.csv")
+```
+
+### Streaming Live Tweets
+
+```{r, eval=FALSE}
+get_token()
+
+streamtime <- 30 * 60
+filename <- "covid19.json"
+
+stream_tweets(q = tags, parse = FALSE, timeout = streamtime, file_name = filename)
+TweetsFile <- parse_stream(filename)
+
+write_as_csv(TweetsFile, "covid19.json", prepend_ids = TRUE, na = "", fileEncoding = "UTF-8")
+
+save_as_csv(TweetsFile, "covid19.json", prepend_ids = TRUE, na = "", fileEncoding = "UTF-8")
+```
+
+- We have tried both the extraction and streaming techniques for collecting the data. Now we are good with the data having approximately 2.5 lakhs tweets that are one way or other related to COVID-19.
+
+# **Data Preprocessing**
+
+## Libraries
+
+```{r, eval=FALSE}
+library(stringr)
+library(SentimentAnalysis)
+library(ggplot2)
+library(stopwords)
+library(dplyr)
+library(caret)
+```
+
+- Once we have extracted the Tweets from the Twitter now our major task is to clean up this tweets for executing the model
+
+- We are firstly loading entire dataset in the environment and then only using the Text data from the dataset which will give us the thoughts of the people in each tweets.
+
+```{r, eval=FALSE}
+tweets <- read.csv("TwitterCovidData.csv")
+unclean_tweet <- tweets$text
+```
+
+- The text data contains lots of URLs, spaces, emotion symbols, images, tags, mentions, punctuations etc. this type of input will cause us to build a wrong model as the information that the model will input is incorrect.
+
+- Hence we are cleaning the data by removing the above mention factors from the text. Aslo there are stopwords involved in the text which does not provide significant information to the model and we are removing this words from our tweets.
+
+```{r, eval=FALSE}
+clean_tweet = gsub("&amp", "", unclean_tweet)
+clean_tweet = gsub("(RT|via)((?:\\b\\W*@\\w+)+)", "", clean_tweet)
+clean_tweet = gsub("@\\w+", "", clean_tweet)
+clean_tweet = gsub("[[:punct:]]", "", clean_tweet)
+clean_tweet = gsub("[[:digit:]]", "", clean_tweet)
+clean_tweet = gsub("http\\w+", "", clean_tweet)
+clean_tweet = gsub("[ \t]{2,}", "", clean_tweet)
+clean_tweet = gsub("^\\s+|\\s+$", "", clean_tweet)
+clean_tweet <- tolower(clean_tweet)
+
+stopwords_regex = paste(stopwords('en'), collapse = '\\b|\\b')
+stopwords_regex = paste0('\\b', stopwords_regex, '\\b')
+
+clean_tweet <- str_replace_all(clean_tweet, stopwords_regex, " ")
+clean_tweet <- str_replace(gsub("\\s+", " ", str_trim(clean_tweet)), "B", "b")
+```
+
+- Afer cleaning up the tweets we are only using the unique tweets without any NA values in it as we have ample amount of data.
+
+```{r, eval=FALSE}
+clean_tweet <- unique(clean_tweet)
+anyNA(clean_tweet)
+
+clean_tweet <- na.omit(clean_tweet)
+anyNA(clean_tweet)
+```
+
+## Data Labelling
+
+- We have the clean tweets as out dataset. The next parameter is to label the tweets as POSITIVE and NEGATIVE.
+- The R we have a inbuilt library called **SentimentAnalysis** which provides the labels on the text input. Here we are using this libarary functionality we label our tweets as Positive and Negative based on QDAP dictionary.
+
+This labels will serve as an labelling parameter for our Deep learning model.
+
+```{r, eval=FALSE}
+Sentiments <- analyzeSentiment(clean_tweet)
+Label_level_2 <- convertToBinaryResponse(Sentiments$SentimentQDAP)
+
+Level2_Train <- cbind.data.frame(clean_tweet, Label_level_2) 
+colnames(Level2_Train)<- c("Text", "Label")
+Level2_Train <- na.omit(Level2_Train)
+```
+
+- Ploting Sentiments Statistics for Dataset
+
+```{r, eval=FALSE}
+ggplot(Level2_Train, aes(Label)) + geom_bar()
+```
+
+- Here we can see that the data is baised where we have more number of positive sentiments than that of negative ones.
+- Thus if we tend to use this dataset the model we will build will also be a biased one, and so we are balancing the dataset with equal amount of Positive and Negative tweets.
+
+## Data Balancing
+
+```{r, eval=FALSE}
+Negative <- Level2_Train %>% filter(Label == "negative")
+Positive <- Level2_Train %>% filter(Label == "positive")
+
+Random_Positive <- sample(1:nrow(Positive), nrow(Negative), replace = FALSE)
+PositiveSample <- Positive[Random_Positive,]
+DataSet_Unbaised <- rbind.data.frame(PositiveSample, Negative)
+
+ggplot(DataSet_Unbaised, aes(Label)) + geom_bar()
+```
+
+## Data Partitioning
+
+- We are dividing the data into 50% training data, 30% Validation data and 20% test dataset.
+
+```{r, eval=FALSE}
+set.seed(123)
+
+# 20% Test data
+Test_Index <- createDataPartition(DataSet_Unbaised$Label, p=0.2, list=FALSE)
+Test_Data <- DataSet_Unbaised[Test_Index,]
+TraVal_Data <- DataSet_Unbaised[-Test_Index,]
+
+# 50% of remaining data is training.
+Train_Index = createDataPartition(TraVal_Data$Label, p=0.625, list=FALSE) 
+Train_Data = TraVal_Data[Train_Index,]
+
+# 30% is validation data.
+Validation_data = TraVal_Data[-Train_Index,] 
+```
+
+- Checking the dimensions of the data.
+
+```{r, eval=FALSE}
+dim(Train_Data)
+dim(Validation_data)
+dim(Test_Data)
+```
+
+## Tokenizing the dataset
+
+```{r, eval=FALSE}
+library(keras)
+
+tokenizerT <- text_tokenizer(num_words = 25000) %>% fit_text_tokenizer(Train_Data$Text)
+sequencesTrain <- texts_to_sequences(tokenizer, Train_Data$Text)
+
+tokenizerV <- text_tokenizer(num_words = 25000) %>% fit_text_tokenizer(Validation_data$Text)
+sequencesValid <- texts_to_sequences(tokenizer, Validation_data$Text)
+
+tokenizerTe <- text_tokenizer(num_words = 25000) %>% fit_text_tokenizer(Test_Data$Text)
+sequencesTest <- texts_to_sequences(tokenizer, Test_Data$Text)
+```
+
+## Vectorization
+
+- Here we are generating a matrix with equal number of rows using padding and the final output we get is a tensor we will provide as a input to the Deep learning model.
+
+```{r, eval=FALSE}
+vectorize_sequences <- function(sequencesT, dimension = 25000){
+  results <- matrix(0, nrow=length(sequencesT), ncol=dimension)
+  for(i in 1:length(sequencesT))
+    results[i,sequencesT[[i]]] <- 1
+  results
+}
+
+Train <- vectorize_sequences(sequencesTrain)
+Valid <- vectorize_sequences(sequencesValid)
+Test <- vectorize_sequences(sequencesTest)
+```
+
+- Assigning the labels in numeric format for train, validation and test data.
+
+```{r, eval=FALSE}
+temp1 <- as.numeric(Train_Data$Label)
+Label_T <- ifelse(temp1==1, "0", "1")
+Train_Label <- as.numeric(Label_T)
+
+temp2 <- as.numeric(Validation_data$Label)
+Label_V <- ifelse(temp2==1, "0", "1")
+Valid_Label <- as.numeric(Label_V)
+
+temp3 <- as.numeric(Test_Data$Label)
+Label_Te <- ifelse(temp3==1, "0", "1")
+Test_Label <- as.numeric(Label_Te)
+```
+
+# **Model**
+
+## Model Building - Neural Network Base Model
+
+For the modeling purpose we are building a LSTM model which stores the memory of the previous state along with the L2 regularization, droupout, using activation functions of Rectilinear as well as the Sigmoid function as we have our output in **0** and **1**.
+
+```{r, eval=FALSE}
+Model <- keras_model_sequential() %>% 
+  layer_lstm(units = 32, activation = "relu", input_shape=c(25000),kernel_regularizer = regularizer_l2(l=0.001)) %>%
+  layer_dropout(rate = 0.75) %>%
+  layer_lstm(units = 16, activation = "relu", kernel_regularizer = regularizer_l2(l=0.001)) %>%
+  layer_dense(units = 1, activation = "sigmoid")
+```
+
+## Model Compilation
+
+For the compilation, the model is implemented using the rmsprop optimizer with the Binary Cross entropy Loss function, with the evaluating metrics of Accuracy.
+
+```{r, eval=FALSE}
+Model %>% compile(
+  optimizer = optimizer_rmsprop(lr = 0.001),
+  loss = "binary_crossentropy",
+  metrics = c("acc")
+)
+
+summary(Model)
+```
+
+## Callback for Model Monitoring and Inspection
+
+We have implemented a Model monitoring and inspection method like callback and checkpoints.
+Here the callback will interrupt training when improvements stops on validation accuracy and also stopped improve for more than 1 epoch.
+Similarly, checkpoint helps to prevent overwriting the model unless validation accuracy improved.
+
+```{r, eval=FALSE}
+callback_list <- list(
+  call_back_early_stopping(
+    monitor="acc",                       
+    patience=1
+  ),
+  callback_model_checkpoint(
+    filepath ="callback_model",         
+    monitor = "val_loss",
+    save_best_only = TRUE
+  )
+)
+```
+
+## Applying the model on the Training data and evaluting it using Cross Validation with validation split of 20%.
+
+```{r, eval=FALSE}
+Train_Model <- Model %>% fit(
+  Train, Label,
+  epochs = 20,
+  batch_size = 150,
+  callbacks = callback_list,
+  validation_split = 0.2
+)
+```
+
+## Retraining the model with hypertunned epochs and evaluating on Validation Data
+
+```{r, eval=FALSE}
+Train_Model <- Model %>% fit(
+  Train, Label,
+  epochs = 3,
+  batch_size = 150,
+  callbacks = callback_list,
+  validation_data = list(Valid, Valid_Label)
+)
+```
+
+## Evaluating the model on Test set.
+
+```{r, eval=FALSE}
+results <- Model %>% evaluate(Test, Test_Label)
+```
+
+# **Conclusion**
+
+- Using the Recurrent Neural Network - Long short term model, the Sentiments from the United States Tweets were analysed. As the data we extracted have an overview of the covid-19 situation in USA along with the thoughts of the measures taken by the governments and medical officials, we could see the POSITIVITY among the masses.
+
+- The people show good reaction due to factors like Staying at home, Environment healing, Family Bonding, Praises for Medical facilities, etc.
+- Similarly, there are negative reaction for the Corona Pandemic as - huge human loss, travel banned, etc.
+
+![Senytiment Statistics over Past Month](C:/Users/12342/Documents/AdvancedML/Project/Data/New/Sentiment.jpeg)
+
+- Looking at the above graph we could conclude that the most of the negative tweets are seen at the time of 22nd April to 30th April when US was facing a huge peek of deaths and Lockdown in most of the States.
+
+# **Insights On Model Build with SAMPLE Dataset**
+
+*NOTE- Due to the computational limitations we could not execute the model with large dataset. Therefore we tried using a sample data to build the model. Although due to small dataset the model does not work as expected*
+
+**Data Preprocessing**
+
+- Initially, we extracted the data of 50,000 tweets from the twitter API. The cleaning of the data left us with approximately 23,000 data entries.
+- The Sentiments were assigned using the *SentimentAnalysis* Libarary as Positive and Negative.
+- There was a biase in the dataset for which we had to balance the data in equal number of positive and negative entries. hence we were left with ~12,000 data entries.
+
+**Text to Tensors**
+
+- The dataset is then converted into set of tokens which were then vectorized to form tensors. These tensors acts as an input to the Neural Network.
+
+**Model**
+
+ **Embedding Layer Dense Model**
+- The first model we build we the layer embedding of input tensors of 10,000 performed very poorly with low accuracy and high loss.
+
+ **RNN Model**
+- Later to improve the model we used the Recurrent neural network and the accuracy improved slightly. But due to very small sampel set the model tends to overfit at the earliest.
+
+ **LSTM Model**
+- We tried the same RNN model using the layer LSTM and could see the accuracy and losses are performing better.
+
+**Hypertuning**
+
+- Droupouts
+- L2 regularization
+
+**PLots of Accuracy and Losses for the Models**
+
+![Accuracy](C:/Users/12342/Documents/AdvancedML/Project/Data/New/Accuracy.png)
+
+![Loss](C:/Users/12342/Documents/AdvancedML/Project/Data/New/Losses.png)
+
+
+**Performance**
+
+```{r, echo=FALSE}
+c1 <- c("Embedding Layer", "RNN","LSTM", "Squential & NN","Dropout", "L2 Regularization")
+c2 <- c("0.28", "0.5", "0.09", "0.004", "0.05", "0.19")
+c3 <- c("0.90", "0.98", "0.96", "0.99", "0.98", "0.95")
+c4 <- c("0.77" ,"1.12", "0.73", "1.35", "0.92", "0.66")
+c5 <- c("0.49", "0.66", "0.75", "0.72", "0.72", "0.74")
+
+x <- cbind.data.frame(c1,c2, c3, c4, c5)
+colnames(x) <- c("Models", "Train_Loss", "Train_Accuracy", "Validation_Loss", "Validation_Accuracy")
+x
+```
+
+
+# **Problems Faced**
+
+- The twitter API provided with the last 7 days tweets only. So we had to extract the data eery few days to see the trend. Also the data fetched included the multi language data but in English script hence during labelling the data as positive and negative some of the data actually does not make any sense so we had to clean the data using various majors.
+
+- The huge dataset could not be computed using the normal machines. Thus we had to sample the dataset into parts to execute the models. But even though the model tends to overfit very fast and the information learning rate was less in sample set.
+
+# **References**
+
+- https://www.r-bloggers.com/how-to-prepare-data-for-nlp-text-classification-with-keras-and-tensorflow/
+- https://dataaspirant.com/2018/03/22/twitter-sentiment-analysis-using-r/
+- https://towardsdatascience.com/keras-challenges-the-avengers-541346acb804
+- https://keras.io/why-use-keras/
+- https://medium.com/better-programming/twitter-sentiment-analysis-15d8892c0082
+- https://medium.com/@claudioakaklaus/sentiment-analysis-on-us-twitter-airlines-dataset-a-deep-learning-approach-885959366d32
+- https://analyzecore.com/2017/02/08/twitter-sentiment-analysis-doc2vec/
+- https://monkeylearn.com/sentiment-analysis/
+- https://www.shirin-glander.de/2019/01/text_classification_keras_data_prep/
+- https://github.com/jjallaire/deep-learning-with-r-notebooks
+- https://towardsdatascience.com/illustrated-guide-to-lstms-and-gru-s-a-step-by-step-explanation-44e9eb85bf21

@@ -1,0 +1,333 @@
+---
+title: "SAMPLE: Sentiment Analysis on twitter COVID-19 data"
+author: "Group 1"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+    toc: true
+---
+
+# Libraries
+
+```{r}
+library(stringr)
+library(tm)
+library(tidytext)
+library(dplyr)
+library(SentimentAnalysis)
+library(ggplot2)
+library(keras)
+library(tidyr)
+```
+
+# Importing Data
+
+```{r}
+tweets <- read.csv("SampleData.csv")
+unclean_tweet <- tweets$text
+```
+
+# Data Cleaning
+
+```{r}
+clean_tweet = gsub("&amp", "", unclean_tweet)
+clean_tweet = gsub("(RT|via)((?:\\b\\W*@\\w+)+)", "", clean_tweet)
+clean_tweet = gsub("@\\w+", "", clean_tweet)
+clean_tweet = gsub("[[:punct:]]", "", clean_tweet)
+clean_tweet = gsub("[[:digit:]]", "", clean_tweet)
+clean_tweet = gsub("http\\w+", "", clean_tweet)
+clean_tweet = gsub("[ \t]{2,}", "", clean_tweet)
+clean_tweet = gsub("^\\s+|\\s+$", "", clean_tweet)
+clean_tweet <- tolower(clean_tweet)
+
+#Stop words cleaning
+stopwords_regex = paste(stopwords('en'), collapse = '\\b|\\b')
+stopwords_regex = paste0('\\b', stopwords_regex, '\\b')
+clean_tweet <- str_replace_all(clean_tweet, stopwords_regex, " ")
+clean_tweet <- str_replace(gsub("\\s+", " ", str_trim(clean_tweet)), "B", "b")
+clean_tweet[10]
+
+#removing duplicates
+clean_tweet <- unique(clean_tweet)
+anyNA(clean_tweet)
+```
+
+# Labelling the tweets
+
+```{r}
+Sentiments <- analyzeSentiment(clean_tweet[1:15000])
+Label_level_2 <- convertToBinaryResponse(Sentiments$SentimentQDAP)
+Level2_Train <- cbind.data.frame(clean_tweet[1:15000], Label_level_2) 
+ggplot(Level2_Train, aes(Label_level_2)) + geom_bar()
+
+Sentiments1 <- analyzeSentiment(clean_tweet[15001:23468])
+Label_level_21 <- convertToBinaryResponse(Sentiments1$SentimentQDAP)
+Level2_Train1 <- cbind.data.frame(clean_tweet[15001:23468], Label_level_21) 
+ggplot(Level2_Train1, aes(Label_level_21)) + geom_bar()
+
+colnames(Level2_Train1)<- c("Text", "Label")
+```
+
+# Balancing the data
+
+```{r}
+
+Neg_tweets <- Level2_Train %>% filter(Label_level_2 == "negative")
+colnames(Neg_tweets)<- c("Text", "Label")
+x <- rbind.data.frame(Level2_Train1, Neg_tweets)
+TrainSet <- na.omit(x)
+anyNA(TrainSet)
+ggplot(TrainSet, aes(Label)) + geom_bar()
+
+```
+
+# Preprocessing the data for neural networks
+
+```{r}
+tokenizer <- text_tokenizer(num_words = 10000) %>% fit_text_tokenizer(TrainSet$Text)
+sequencesTrain <- texts_to_sequences(tokenizer, TrainSet$Text)
+
+temp <- as.numeric(TrainSet$Label)
+Label <- ifelse(temp==1, "0", "1")
+Label <- as.numeric(Label)
+```
+
+# Vectorization of sequences
+
+```{r}
+tokenizer1 <- text_tokenizer(num_words = 25000) %>% fit_text_tokenizer(TrainSet$Text)
+
+sequencesTrain1 <- texts_to_sequences(tokenizer1, TrainSet$Text)
+vectorize_sequences <- function(sequencesT, dimension = 25000){
+  results <- matrix(0, nrow=length(sequencesT), ncol=dimension)
+  for(i in 1:length(sequencesT))
+    results[i,sequencesT[[i]]] <- 1
+  results
+}
+
+Train <- vectorize_sequences(sequencesTrain1)
+```
+
+# Model Building
+
+## Using Embedding layer Dense Model
+```{r}
+max_features <- 10000  # Words to consider as features
+maxlen <- 20   #Cut off text after this number of words
+
+x_train <- pad_sequences(sequencesTrain,maxlen = maxlen)
+
+Model1 <- keras_model_sequential() %>% layer_embedding(input_dim = 10000, output_dim = 8, input_length = maxlen) %>%
+          layer_flatten() %>%
+          layer_dense(units = 1,activation = "sigmoid")
+
+Model1 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("acc")
+)
+
+summary(Model1)
+
+Train_Model1 <- Model1 %>% fit(
+  x_train, Label,
+  epochs = 10,
+  batch_size = 128,
+  validation_split = 0.2
+)
+
+plot(Train_Model1)
+```
+
+## Using RNN Model
+
+```{r}
+Model2 <- keras_model_sequential() %>% layer_embedding(input_dim = 10000, output_dim = 8, input_length = maxlen) %>%
+  layer_simple_rnn(units = 32) %>%
+  layer_dense(units = 1,activation = "sigmoid")
+
+Model2 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("acc")
+)
+
+summary(Model2)
+
+Train_Model2 <- Model2 %>% fit(
+  x_train, Label,
+  epochs = 10,
+  batch_size = 128,
+  validation_split = 0.2
+)
+
+plot(Train_Model2)
+```
+
+## USing LSTM model
+
+```{r}
+Model3<- keras_model_sequential() %>% layer_embedding(input_dim = 10000, output_dim = 8, input_length = maxlen) %>%
+  layer_lstm(units = 32) %>%
+  layer_dense(units = 1,activation = "sigmoid")
+
+Model3%>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("acc")
+)
+
+summary(Model3)
+
+Train_Model3 <- Model3 %>% fit(
+  x_train, Label,
+  epochs = 10,
+  batch_size = 128,
+  validation_split = 0.2
+)
+
+plot(Train_Model3)
+```
+
+## Using Dense network model
+
+```{r}
+Model4 <- keras_model_sequential() %>% layer_dense(units = 32, activation = "relu", input_shape = c(25000)) %>% 
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+Model4 %>% compile(
+  optimizer = optimizer_rmsprop(lr = 0.001),
+  loss = "binary_crossentropy",
+  metrics = c("acc")
+)
+
+summary(Model4)
+
+Train_Model4 <- Model4 %>% fit(
+  Train, Label,
+  epochs = 10,
+  batch_size = 128,
+  validation_split = 0.2
+)
+
+plot(Train_Model4)
+```
+
+# Now Hypertuning the Neural Network Model
+
+## Dropout
+
+```{r}
+Model5 <- keras_model_sequential() %>% layer_dense(units = 32, activation = "relu", input_shape = c(25000)) %>% 
+  layer_dropout(rate=0.5) %>%
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+Model5 %>% compile(
+  optimizer = optimizer_rmsprop(lr = 0.001),
+  loss = "binary_crossentropy",
+  metrics = c("acc")
+)
+
+summary(Model5)
+
+Train_Model5<- Model5 %>% fit(
+  Train, Label,
+  epochs = 10,
+  batch_size = 128,
+  validation_split = 0.2
+)
+
+plot(Train_Model5)
+```
+
+## L2 Regularization
+
+```{r}
+Model6 <- keras_model_sequential() %>% layer_dense(units = 32, activation = "relu", input_shape = c(25000),kernel_regularizer = regularizer_l2(l=0.001)) %>% 
+  layer_dense(units = 16, activation = "relu",kernel_regularizer = regularizer_l2(l=0.001)) %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+Model6 %>% compile(
+  optimizer = optimizer_rmsprop(lr = 0.001),
+  loss = "binary_crossentropy",
+  metrics = c("acc")
+)
+
+summary(Model6)
+
+Train_Model6 <- Model6 %>% fit(
+  Train, Label,
+  epochs = 10,
+  batch_size = 128,
+  validation_split = 0.2
+)
+
+plot(Train_Model6)
+```
+
+Decreasing network capacity using units=4
+```{r}
+Model7 <- keras_model_sequential() %>% layer_dense(units = 4, activation = "relu", input_shape = c(25000)) %>% 
+  layer_dense(units = 4, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+Model7 %>% compile(
+  optimizer = optimizer_rmsprop(lr = 0.001),
+  loss = "binary_crossentropy",
+  metrics = c("acc")
+)
+
+summary(Model7)
+
+Train_Model7 <- Model7 %>% fit(
+  Train, Label,
+  epochs = 10,
+  batch_size = 128,
+  validation_split = 0.2
+)
+
+plot(Train_Model7)
+```
+
+# Plotting Validation Accuracy and Losses
+
+```{r}
+
+plot_val_losses <- function(losses) {
+  loss_names <- names(losses)
+  losses <- as.data.frame(losses)
+  losses$epoch <- seq_len(nrow(losses))
+  losses %>% 
+    gather(model, loss, loss_names[[1]], loss_names[[2]],loss_names[[3]],loss_names[[4]]) %>% 
+    ggplot(aes(x = epoch, y = loss))+
+    geom_line(aes(colour = model))
+  
+}
+
+plot_val_accuracy <- function(accuracy) {
+  accuracy_names <- names(accuracy)
+  accuracy <- as.data.frame(accuracy)
+  accuracy$epoch <- seq_len(nrow(accuracy))
+  accuracy %>% 
+    gather(model, accuracy, accuracy_names[[1]], accuracy_names[[2]],accuracy_names[[3]],accuracy_names[[4]]) %>% 
+    ggplot(aes(x = epoch, y = accuracy))+
+    geom_line(aes(colour = model))
+}
+
+plot_val_losses(losses = list(
+  initial_model = Train_Model4$metrics$val_loss,
+  dropout_model = Train_Model5$metrics$val_loss,
+  L2_model = Train_Model6$metrics$val_loss,
+  lowcapacity_model =Train_Model7$metrics$val_loss
+))
+
+plot_val_accuracy(accuracy = list(
+  initial_model = Train_Model4$metrics$val_acc,
+  dropout_model = Train_Model5$metrics$val_acc,
+  L2_model = Train_Model6$metrics$val_acc,
+  lowcapacity_model =Train_Model7$metrics$val_acc
+))
+```
