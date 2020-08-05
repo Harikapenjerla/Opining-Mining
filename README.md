@@ -30,18 +30,17 @@ LSTM Model - We tried the same RNN model using the layer LSTM and could see the 
 Hypertuning<br />
 •	Droupouts <br />
 •	L2 regularization<br />
+
 PLots of Accuracy and Losses for the Models <br />
- 
+ ![pic1](https://user-images.githubusercontent.com/54416525/89357996-1b4eb880-d690-11ea-9312-23dd17da4bc9.jpg)
+
 Accuracy<br />
- 
+ ![pic2](https://user-images.githubusercontent.com/54416525/89357998-1d187c00-d690-11ea-9ffe-c4b15d3ae524.jpg)
+
 Loss<br />
+![pic3](https://user-images.githubusercontent.com/54416525/89358036-3a4d4a80-d690-11ea-895b-649800b585c2.png)
 
-
-
-
-
-
-
+[pic3](https://user-images.githubusercontent.com/54416525/89358003-20136c80-d690-11ea-8cd0-734bc6a08572.JPG)
 
 ## Note:
 Data  <br />
