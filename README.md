@@ -1,4 +1,5 @@
 # Project Title: Opinion Mining 
+
 ## Objective: 
 Our objective is to determine how the people in United State are reacting towards the Pandemic, for example, people tweets praises for doctors and nurses on how helpful they are, how the stay at home have helped in controlling the spread on Virus, etc. In the similar way there are negative tweets as well which we are trying to find. Hence, we are looking for the change in Sentiments of Public based on COVID-19, and the measures implemented for it.
 ## Goal: 
@@ -8,12 +9,21 @@ Our goal is to check the awareness the mass has about the Corona Pandemic and ho
 •	The huge dataset could not be computed using the normal machines. Thus, we had to sample the dataset into parts to execute the models. But even though the model tends to overfit very fast and the information learning rate was less in sample set. 
 ## Note:
 Data  <br />
-[Github](https://github.com/)   <br />
+[Data](https://github.com/Harikapenjerla/Opining-Mining/blob/master/TwitterCovidData.zip)   <br />
 Using available resources, we sampled the data and proceeded for the analysis and modeling. For more details: <br />
-[Github](https://github.com/Harikapenjerla/Opining-Mining/blob/master/OpinionMining_COVIDTweets.Rmd)  <br />
+
+[SampleData-RCode](https://github.com/Harikapenjerla/Opining-Mining/blob/master/SampleDataFile.Rmd)  <br />
+[SampleData-html](https://github.com/Harikapenjerla/Opining-Mining/blob/master/SampleDataFile.html)   <br />
+
 For complete data analysis and modeling, we also provide the details of our planning/ approach  <br />
-[Github](https://github.com/)   <br />
+[CompleteData-RCode](https://github.com/Harikapenjerla/Opining-Mining/blob/master/OpinionMining_COVIDTweets.Rmd)   <br />
+[CompleteData-html](https://github.com/Harikapenjerla/Opining-Mining/blob/master/OpinionMining_COVIDTweets.html)   <br />
+
 Presentation  <br />
-[Github](https://github.com/)    <br />
+[Presentation](https://github.com/Harikapenjerla/Opining-Mining/blob/master/Opinion_Mining_Presentation.pdf)    <br />
+
+Word Cloud details <br />
+[WordCloud](https://github.com/Harikapenjerla/Opining-Mining/blob/master/WordCount.Rmd)  <br />
+
 
 
