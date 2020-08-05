@@ -13,8 +13,9 @@ Our goal is to check the awareness the mass has about the Corona Pandemic and ho
 •	Using the Recurrent Neural Network - Long short term model, the Sentiments from the United States Tweets were analysed. As the data we extracted have an overview of the covid-19 situation in USA along with the thoughts of the measures taken by the governments and medical officials, we could see the POSITIVITY among the masses. <br />
 •	The people show good reaction due to factors like Staying at home, Environment healing, Family Bonding, Praises for Medical facilities, etc.<br />
 •	Similarly, there are negative reaction for the Corona Pandemic as - huge human loss, travel banned, etc.<br />
+ ![pic1](https://user-images.githubusercontent.com/54416525/89357996-1b4eb880-d690-11ea-9312-23dd17da4bc9.jpg)
  
-Sentiment Statistics over Past Month
+Sentiment Statistics over Past Month <br />
 •	Looking at the above graph we could conclude that the most of the negative tweets are seen at the time of 22nd April to 30th April when US was facing a huge peek of deaths and Lockdown in most of the States.<br />
 NOTE- Due to the computational limitations we could not execute the model with large dataset. Therefore we tried using a sample data to build the model. Although due to small dataset the model does not work as expected <br />
 Data Preprocessing<br />
@@ -32,7 +33,6 @@ Hypertuning<br />
 •	L2 regularization<br />
 
 PLots of Accuracy and Losses for the Models <br />
- ![pic1](https://user-images.githubusercontent.com/54416525/89357996-1b4eb880-d690-11ea-9312-23dd17da4bc9.jpg)
 
 Accuracy<br />
  ![pic2](https://user-images.githubusercontent.com/54416525/89357998-1d187c00-d690-11ea-9ffe-c4b15d3ae524.jpg)
@@ -40,7 +40,7 @@ Accuracy<br />
 Loss<br />
 ![pic3](https://user-images.githubusercontent.com/54416525/89358036-3a4d4a80-d690-11ea-895b-649800b585c2.png)
 
-[pic3](https://user-images.githubusercontent.com/54416525/89358003-20136c80-d690-11ea-8cd0-734bc6a08572.JPG)
+![pic3](https://user-images.githubusercontent.com/54416525/89358003-20136c80-d690-11ea-8cd0-734bc6a08572.JPG)
 
 ## Note:
 Data  <br />
