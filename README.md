@@ -1,4 +1,6 @@
 # Project Title: Opinion Mining 
+![word_cloud_pic](https://user-images.githubusercontent.com/54416525/89357425-6f589d80-d68e-11ea-9000-592687563645.PNG)
+
 
 ## Objective: 
 Our objective is to determine how the people in United State are reacting towards the Pandemic, for example, people tweets praises for doctors and nurses on how helpful they are, how the stay at home have helped in controlling the spread on Virus, etc. In the similar way there are negative tweets as well which we are trying to find. Hence, we are looking for the change in Sentiments of Public based on COVID-19, and the measures implemented for it.
