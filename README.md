@@ -10,7 +10,7 @@ Our goal is to check the awareness the mass has about the Corona Pandemic and ho
 Data  <br />
 [Github](https://github.com/)   <br />
 Using available resources, we sampled the data and proceeded for the analysis and modeling. For more details: <br />
-[Github](https://github.com/)  <br />
+[Github](https://github.com/Harikapenjerla/Opining-Mining/blob/master/OpinionMining_COVIDTweets.Rmd)  <br />
 For complete data analysis and modeling, we also provide the details of our planning/ approach  <br />
 [Github](https://github.com/)   <br />
 Presentation  <br />
